@@ -1,0 +1,128 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: /users/{userId}
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required, email format)
+    //   - name: string (optional)
+    //   - displayName: string (optional)
+    //   - role: string (required, enum: ['admin', 'cashier', 'manager'])
+    //   - companyId: string (required)
+    //   - permissions: map (optional)
+    //   - createdAt: timestamp (optional)
+    //
+    // Collection: /companies/{companyId}/products
+    // Fields:
+    //   - companyId: string (required)
+    //   - name: string (required)
+    //   - sku: string (optional)
+    //   - barcode: string (optional)
+    //   - quantity: number (required)
+    //   - purchasePrice: number (optional)
+    //   - salePrice: number (optional)
+    //   [Other inventory fields...]
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (getUserData().role == 'admin' || 
+         (request.auth.token.email == "edodo9251@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isCompanyMember(companyId) {
+      return isAuthenticated() && getUserData().companyId == companyId;
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    // User Profiles
+    match /users/{userId} {
+      function isValidUser(data) {
+        return data.uid is string && 
+               isValidEmail(data.email) &&
+               data.role in ['admin', 'cashier', 'manager'] &&
+               data.companyId is string;
+      }
+
+      allow read: if isOwner(userId) || isAdmin();
+      
+      allow create: if isAuthenticated() && 
+                      isOwner(userId) && 
+                      isValidUser(request.resource.data) &&
+                      (request.resource.data.role != 'admin' || isAdmin()); // Only admins can create admins
+      
+      allow update: if isAuthenticated() && 
+                      isOwner(userId) && 
+                      isValidUser(request.resource.data) &&
+                      (request.resource.data.role == resource.data.role || isAdmin()); // Cannot change own role unless admin
+    }
+
+    // Company Data
+    match /companies/{companyId} {
+      allow read: if isCompanyMember(companyId) || isAdmin();
+
+      match /{collectionPath=**} {
+        allow read: if isCompanyMember(companyId) || isAdmin();
+        allow write: if isCompanyMember(companyId) || isAdmin();
+      }
+
+      // Specific validation for products
+      match /products/{productId} {
+        function isValidProduct(data) {
+          return data.companyId == companyId &&
+                 data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
+                 data.quantity is number;
+        }
+        allow create, update: if (isCompanyMember(companyId) || isAdmin()) && isValidProduct(request.resource.data);
+      }
+
+      // Specific validation for invoices
+      match /invoices/{invoiceId} {
+        function isValidInvoice(data) {
+          return data.companyId == companyId &&
+                 data.number is string &&
+                 data.type in ['sales', 'purchase'] &&
+                 data.total is number;
+        }
+        allow create, update: if (isCompanyMember(companyId) || isAdmin()) && isValidInvoice(request.resource.data);
+      }
+    }
+  }
+}

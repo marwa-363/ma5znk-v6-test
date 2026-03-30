@@ -1,0 +1,224 @@
+{
+  "entities": {
+    "Account": {
+      "title": "Account",
+      "description": "An accounting account in the chart of accounts.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["Asset", "Liability", "Equity", "Revenue", "Expense"] },
+        "balance": { "type": "number" },
+        "companyId": { "type": "string" },
+        "parentId": { "type": "string" },
+        "isSystem": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["code", "name", "type", "companyId"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A single accounting transaction entry.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "accountId": { "type": "string" },
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["debit", "credit"] },
+        "description": { "type": "string" },
+        "invoiceId": { "type": "string" },
+        "userId": { "type": "string" },
+        "reference": { "type": "string" }
+      },
+      "required": ["companyId", "date", "accountId", "amount", "type"]
+    },
+    "JournalEntry": {
+      "title": "JournalEntry",
+      "description": "A manual journal entry consisting of multiple lines.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "reference": { "type": "string" },
+        "description": { "type": "string" },
+        "lines": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "accountId": { "type": "string" },
+              "debit": { "type": "number" },
+              "credit": { "type": "number" }
+            }
+          }
+        },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["companyId", "date", "lines"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "An inventory product.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "name": { "type": "string" },
+        "sku": { "type": "string" },
+        "barcode": { "type": "string" },
+        "category": { "type": "string" },
+        "quantity": { "type": "number" },
+        "minQuantity": { "type": "number" },
+        "purchasePrice": { "type": "number" },
+        "salePrice": { "type": "number" },
+        "unit": { "type": "string" },
+        "description": { "type": "string" },
+        "image": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["companyId", "name", "quantity"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "A customer entity.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "balance": { "type": "number" },
+        "totalPurchases": { "type": "number" },
+        "totalPaid": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["companyId", "name"]
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "description": "A supplier entity.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "balance": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["companyId", "name"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "A sales or purchase invoice.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "number": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["sales", "purchase"] },
+        "customerId": { "type": "string" },
+        "supplierId": { "type": "string" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "productId": { "type": "string" },
+              "productName": { "type": "string" },
+              "quantity": { "type": "number" },
+              "price": { "type": "number" },
+              "total": { "type": "number" }
+            }
+          }
+        },
+        "total": { "type": "number" },
+        "status": { "type": "string", "enum": ["paid", "unpaid", "partial", "returned"] },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["companyId", "number", "date", "type", "items", "total"]
+    },
+    "Log": {
+      "title": "Log",
+      "description": "A system audit log.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "action": { "type": "string" },
+        "module": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["companyId", "userId", "action", "timestamp"]
+    },
+    "User": {
+      "title": "User",
+      "description": "A user profile.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "cashier", "manager"] },
+        "companyId": { "type": "string" },
+        "permissions": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role", "companyId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles."
+    },
+    "/companies/{companyId}/accounts": {
+      "schema": "Account",
+      "description": "Chart of accounts for a company."
+    },
+    "/companies/{companyId}/transactions": {
+      "schema": "Transaction",
+      "description": "Individual accounting transactions."
+    },
+    "/companies/{companyId}/journalEntries": {
+      "schema": "JournalEntry",
+      "description": "Manual journal entries."
+    },
+    "/companies/{companyId}/products": {
+      "schema": "Product",
+      "description": "Inventory products."
+    },
+    "/companies/{companyId}/customers": {
+      "schema": "Customer",
+      "description": "Customers list."
+    },
+    "/companies/{companyId}/suppliers": {
+      "schema": "Supplier",
+      "description": "Suppliers list."
+    },
+    "/companies/{companyId}/invoices": {
+      "schema": "Invoice",
+      "description": "Sales and purchase invoices."
+    },
+    "/companies/{companyId}/logs": {
+      "schema": "Log",
+      "description": "System audit logs."
+    }
+  }
+}
